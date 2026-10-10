@@ -1,0 +1,28 @@
+name: validate
+
+# Push only. A fork cannot push a branch here, so this workflow never runs a fork's code.
+on:
+  push:
+
+# Validation only reads the repository.
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      # v4.4.0, pinned to its commit: a tag can be moved.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          # Nothing after the checkout uses the token, so it is not left in .git/config.
+          persist-credentials: false
+      # Validate-only: this plugin ships no test framework (none exists or is implied)
+      # and no shell scripts, so there is no unittest or bash -n step.
+      - name: JSON manifests parse
+        run: |
+          python3 -m json.tool .claude-plugin/plugin.json > /dev/null
+          python3 -m json.tool .claude-plugin/marketplace.json > /dev/null
+          python3 -m json.tool hooks/hooks.json > /dev/null
+      - name: Python sources byte-compile
+        run: python3 -m py_compile hooks/stack-detect.py
